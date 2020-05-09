@@ -12,7 +12,7 @@ from itertools import chain, combinations
 
 
 class Apriori:
-    def __init__(self, transaction_list, min_support=0.03, min_confidence=0.6):
+    def __init__(self, transaction_list, min_support=0.01, min_confidence=0.6):
         self.transaction_list = transaction_list
         self.min_support = min_support
         self.min_confidence = min_confidence
@@ -20,9 +20,24 @@ class Apriori:
         self.item_set = set()
 
     def __main__(self):
+        # Initialize. Generate item set from transaction lists
         self.gen_item_set()
-        l1, item_set_1 = self.gen_frequent_item_set(self.item_set)
-        # self.gen_candidate_item_set(item_set_1)
+        frequent_item_set = list()
+        frequent_set = list()
+
+        # Get frequent 1-item set
+        tmp_set, tmp_item_set = self.gen_frequent_item_set(self.item_set)
+
+        # Iterates
+        k = 2
+        while tmp_item_set != set():
+            frequent_set.append(tmp_set)
+            frequent_item_set.append(tmp_item_set)
+            candidate_item_set = self.gen_candidate_item_set(tmp_item_set)
+            tmp_set, tmp_item_set = self.gen_frequent_item_set(candidate_item_set)
+            frequent_set.append(tmp_set)
+            frequent_item_set.append(tmp_item_set)
+            k += 1
 
     def gen_item_set(self):
         for transaction in self.transaction_list:
@@ -30,6 +45,15 @@ class Apriori:
                 self.item_set.add(frozenset([item]))
 
     def gen_frequent_item_set(self, items):
+        """
+        Generate frequent item set.
+
+        Args:
+            items: The items from which generates frequent item set.
+
+        Returns:
+            The frequent item set with support and frequent item set.
+        """
         l = dict()
         candidate = dict.fromkeys(items, 0)
         item_set = set()
@@ -45,20 +69,39 @@ class Apriori:
                 l[item] = support
                 item_set.add(item)
 
-        return l, itemset
+        return l, item_set
 
     def gen_candidate_item_set(self, item_set):
+        """
+        Generates candidate item sets from given items.
+
+        Args:
+            item_set: The item set from which generates candidate.
+
+        Returns:
+            The set of candidate sets.
+        """
         ck = set()
         for l1 in item_set:
             for l2 in item_set:
-                c = l1.union(l2)
-                if c not in ck and not self.has_infrequent_subset(c, item_set):
-                    ck.add(c)
-                    print(c)
+                if l1 != l2:
+                    c = l1.union(l2)
+                    if not self.has_infrequent_subset(c, item_set):
+                        ck.add(c)
         return ck
 
     def has_infrequent_subset(self, c, item_set):
-        subset_list = list(powerset(c))
+        """
+        Check if the candidate has subset that is not the subset of item set.
+
+        Args:
+            c: The candidate set.
+            item_set: The frequent item set.
+
+        Returns:
+            False If candidate set c has infrequent subset.
+        """
+        subset_list = map(frozenset, [item for item in powerset(c)])
         for item in subset_list:
             if not item.issubset(item_set):
                 return False
@@ -71,28 +114,38 @@ def powerset(iterable):
 
 
 def read_file(file_path):
-    itemset = list()
+    """
+    Read csv data file from disk.
+
+    Parameters:
+        file_path: The path to the data file.
+
+    Returns:
+        The transactions data list.
+    """
+    transaction_list = list()
     df = pd.read_csv(file_path)
     raw_data = df.iloc[:, 1].values.tolist()
     t0 = time.perf_counter()
     for item in raw_data:
         item = item.strip('{}')
         tmp = item.split(",")
-        tmp = sorted(tmp)
-        itemset.append(set(tmp))
+        transaction_list.append(set(tmp))
     t1 = time.perf_counter()
     print("Read Data Time ", (t1 - t0) * 1000)
 
-    return itemset
+    return transaction_list
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-f", "--file", help="input file path")
-    parser.add_argument("-s", "--support", type=float, default=0.1,
-                        help="minimal support")
-    parser.add_argument("-c", "--confidence", type=float, default=0.6, help="minimal confidence")
-    args = parser.parse_args()
-    apriori = Apriori(read_file(args.file), args.support, args.confidence)
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("-f", "--file", help="input file path")
+    # parser.add_argument("-s", "--support", type=float, default=0.1,
+    #                     help="minimal support")
+    # parser.add_argument("-c", "--confidence", type=float, default=0.6, help="minimal confidence")
+    # args = parser.parse_args()
+    file_path = "Groceries.csv"
+    # apriori = Apriori(read_file(args.file), args.support, args.confidence)
+    apriori = Apriori(read_file(file_path))
     apriori.__main__()
     pass
