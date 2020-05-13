@@ -1,16 +1,17 @@
 """Apriori python implementation
 
-Homework of IoT Information processing. A simple implementation
+Homework of IoT Information processing Lab 1. A simple implementation
 of Apriori algorithm.
 
 Author: Hu Yongjian
-License: GNU GPLv3
+License: MIT License
 """
 
 import pandas as pd
 import argparse
 import time
 from itertools import chain, combinations
+
 
 class Apriori:
     """
@@ -26,12 +27,13 @@ class Apriori:
         frequent_seet: List of frequent k-item set with support
         rules: List of association rules.
     """
+
     def __init__(self, transaction_list, min_support=0.05, min_confidence=0.3):
         """
         Initialize the Apriori algorithm.
 
         Args:
-            transaction_list (:obj:`list` of :obj:`set`): The list of all transactions.
+            transaction_list (list[set]): The list of all transactions.
             min_support (float): The minimal relative support.
             min_confidence (float): The minimal confidence.
         """
@@ -62,9 +64,6 @@ class Apriori:
 
         # Generates association rules
         self.gen_rules()
-
-        # Show results
-        self.get_result()
 
     def gen_item_set(self):
         """Generates full item set from transaction list"""
@@ -167,23 +166,19 @@ class Apriori:
 
     def get_result(self):
         """Print result, including frequent item set with support and association rules."""
-        for i in range(len(self.frequent_item_set)):
-            print("The frequent {}-item set is {}".format((i+1), sorted(
-                [sorted(list(x)) for x in self.frequent_item_set[i]])))
-
         sorted_frequent_set = []
         for frequent_set_ in self.frequent_set:
             sorted_frequent_set.extend([(sorted(tuple(key)), value) for key, value in frequent_set_.items()])
 
         print()
-        print("The frequent item set with support:")
+        print("Frequent item set with support:")
         for item, support in sorted(sorted_frequent_set, key=lambda x: (x[1], x[0]), reverse=True):
-            print("The {} item set with support: {:.2f}".format(str(item), support))
+            print("{} --:-- {:.2f}".format(str(item), support))
 
         print()
-        print("The association rules with confidence:")
+        print("Association rules with confidence:")
         for item, confidence in sorted(self.rules, key=lambda x: (x[1], x[0]), reverse=True):
-            print("The {} -> {} with confidence: {:.2f}".format(str(item[0]), str(item[1]), confidence))
+            print("{} --> {} --:-- {:.2f}".format(str(item[0]), str(item[1]), confidence))
 
 
 def powerset(iterable):
@@ -196,8 +191,8 @@ def read_file(file_path):
     """
     Read csv data file from disk.
 
-    Parameters:
-        file_path: The path to the data file.
+    Args:
+        file_path (str): The path to the data file.
 
     Returns:
         The transactions data list.
@@ -205,18 +200,29 @@ def read_file(file_path):
     transaction_list = list()
     df = pd.read_csv(file_path)
     raw_data = df.iloc[:, 1].values.tolist()
-    t0 = time.perf_counter()
+
     for item in raw_data:
         item = item.strip('{}')
         tmp = item.split(",")
         transaction_list.append(set(tmp))
-    t1 = time.perf_counter()
-    print("Read Data Time ", (t1 - t0) * 1000)
 
     return transaction_list
 
 
 if __name__ == "__main__":
+    # Set up parameter
     file_path = "Groceries.csv"
+
+    # Start 
+    t0 = time.perf_counter()
+
+    # Run apriori with defualt support - 0.05 
+    # and confidence - 0.3
     apriori = Apriori(read_file(file_path))
     apriori.__main__()
+    t1 = time.perf_counter()
+    # Finish 
+    print("Time elapsed: ", (t1 - t0) * 1000)
+
+    # Print result
+    apriori.get_result()
