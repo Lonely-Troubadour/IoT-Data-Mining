@@ -57,6 +57,24 @@ def bootstrap(data, length):
 
     return training_set, testing_set
 
+
+def feature_scaler(x_train, x_test):
+    """Feature scaler. Standardize the features.
+
+    Args:
+        x_train (pandas.DataFrame): features of training set.
+        x_test (pandas.DataFrame): features of testing set.
+
+    Returns:
+        Training set and testing set after scaling.
+    """
+    mean = x_train.mean()
+    std = x_train.std()
+    x_train = (x_train + mean) / std
+    x_test = (x_test + mean) / std
+    return x_train, x_test
+
+
 class NaiveBayesClassifier:
     """Naive Bayes Classifier.
 
@@ -65,7 +83,8 @@ class NaiveBayesClassifier:
         # training_set (pandas.DataFrame): Training set.
         # testing_set (pandas.DataFrame): Testing set.
     """
-    def __init__(self, data, feature_num, class_num):
+
+    def __init__(self, x_train, y_train, feature_num, class_num):
         """Initialize naive Bayes classifier.
 
         Args:
@@ -73,32 +92,45 @@ class NaiveBayesClassifier:
             feature_num (int): No. of features.
             class_num (int): No. of classes.
         """
-        self.data_set = data
+        self.x_train = x_train
+        self.y_train = y_train
         self.feature_num = feature_num
         self.class_num = class_num
-        self.prob_c = defaultdict(float) # array.array('f')
-        self.prob_x_cond_c = defaultdict(float) # array.array('f')
-        self.length = data.shape[0]
+        self.prob_y = defaultdict(float)  # array.array('f')
+        self.prob_x_cond_c = defaultdict(float)  # array.array('f')
+        self.length = x_train.shape[0]
         # self.training_set, self.testing_set = bootstrap(self.data_set, self.data_set.shape[0])
+
     pass
 
     def train(self):
         # Get Probability(c), prior prob of each class c.
-        class_count = self.data_set.groupby(['class'], as_index=False).size()
+        class_count = self.y_train.groupby(self.y_train).size()
         for class_, count in class_count.items():
-            self.prob_c[class_] = round(count/self.length, 6)
+            self.prob_y[class_] = round(count / self.length, 6)
 
         # Get Probability(x|c), posterior prob of each class c and feature x.
-
-
 
     def predict(self):
         pass
 
 
 if __name__ == '__main__':
+
+    # Read file
     df = read_file('Iris.csv')
-    # print(df)
+
+    # Partition
     training_set, testing_set = bootstrap(df, df.shape[0])
-    classifier = NaiveBayesClassifier(training_set, 4, 3)
+
+    # Separates features and classes
+    x_train = training_set.iloc[:, 1:5]
+    y_train = training_set.iloc[:, 0]
+    x_test = testing_set.iloc[:, 1:5]
+    y_test = testing_set.iloc[:, 0]
+
+    # Feature scaling
+    x_train, x_test = feature_scaler(x_train, x_test)
+
+    classifier = NaiveBayesClassifier(x_train, y_train, 4, 3)
     classifier.train()
