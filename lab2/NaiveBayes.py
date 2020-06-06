@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
-"""Decision Tree python implementation.
+"""Naive Bayes python implementation.
 
 Homework of IoT Information processing Lab 2. A simple implementation
 of Naive Bayes algorithm.
 
 Example:
     $ python NaiveBayes.py
+    $ python NiaveBayes.py -k num_of_iterations
+    $ python NaiveBayes.py -k 25
 
 Author: Yongjian Hu
 License: MIT License
@@ -16,6 +18,7 @@ import pandas as pd
 import random
 import math
 import array
+import argparse
 
 
 def read_file(file_path):
@@ -296,11 +299,21 @@ def bootstrap_accuracy(data_set, k=20):
 
 
 if __name__ == '__main__':
+    # parse argument
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-k", help="Number of iteration, default 20", \
+    type=int, default=20)
+    args = parser.parse_args()
+
+    # Check k value
+    if (args.k <= 0):
+        raise Exception("Invalid k. k should be > 0", args.k)
+
     # Read file
     df = read_file('Iris.csv')
 
     # Using .632 bootstrap
-    accuracy = bootstrap_accuracy(df)
+    accuracy = bootstrap_accuracy(df, args.k)
 
     # Print model accuracy
     print("Accuracy " + str(accuracy))
