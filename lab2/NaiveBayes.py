@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 """Decision Tree python implementation.
 
-Homework of IoT Information processing Lab 1. A simple implementation
-of Decision Tree algorithm.
+Homework of IoT Information processing Lab 2. A simple implementation
+of Naive Bayes algorithm.
+
+Example:
+    $ python NaiveBayes.py
 
 Author: Yongjian Hu
 License: MIT License
@@ -131,6 +134,7 @@ class NaiveBayesClassifier:
         """Train the Gaussian Naive Bayes model.
 
         Returns:
+            Prior probability of each class, 
             Mean value and standard deviation of each feature of different classes.
         """
 
