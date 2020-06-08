@@ -28,8 +28,8 @@ def read_file(file_path):
         df. The data frame object contains the data set.
     """
     col_names = ["x1", "x2", "x3", "x4", "class"]
-    df = pd.read_csv(file_path, names=col_names)
-    return df
+    dataFrame = pd.read_csv(file_path, names=col_names)
+    return dataFrame
 
 
 def bootstrap(data, length):
@@ -79,8 +79,11 @@ class KMeans:
         """Initialize algorithm. Arbitrarily choose k objects as initial cluster
         centers.
         """
+        index = list()
         for _ in range(self.k):
-            index = random.randrange(len(self.data_set))
+            index.append(random.randrange(len(self.data_set)))
+
+        print(index)
 
         pass
 
@@ -118,5 +121,6 @@ if __name__ == "__main__":
         raise ValueError("Invalid k. k should be > 0", args.k)
 
     df = read_file('Iris.csv')
-
+    kmeans = KMeans(3, df)
+    kmeans.initialize()
     pass
