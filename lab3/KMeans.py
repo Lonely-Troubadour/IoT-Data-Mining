@@ -16,6 +16,7 @@ import argparse
 import pandas as pd
 import math
 import random
+from collections import defaultdict
 
 
 def read_file(file_path):
@@ -70,22 +71,48 @@ class KMeans:
 
     """
 
-    def __init__(self, k, data_set):
+    def __init__(self, k, x_train, y_train):
         self.k = k
-        self.data_set = data_set
+        self.x_train = x_train
+        self.y_train = y_train
+        self.feature_num = x_train.shape[1]
+        self.length = len(self.x_train)
+        self.centroids = list()
+        self.clusters = list()
         pass
 
     def initialize(self):
         """Initialize algorithm. Arbitrarily choose k objects as initial cluster
         centers.
         """
-        index = list()
         for _ in range(self.k):
-            index.append(random.randrange(len(self.data_set)))
+            index = random.randrange(self.length)
+            self.centroids.append(x_train.iloc[index, :].values)
 
-        print(index)
-
+    def train(self):
+        for i in range(self.length):
+            centroid = self.find_cosest_cluster(i)
+            self.clusters.append(centroid)
+        print(self.clusters)
         pass
+
+    def find_cosest_cluster(self, point):
+        """Find the closest cluster head.
+        
+        Args:
+            point (int): The index of data point.
+
+        Returns:
+            Closest cluster centroid index.
+        """
+        distances = dict()
+        for i in range(self.k):
+            distance = self.calc_euclid_dist(self.centroids[i], self.x_train.iloc[point], self.feature_num)
+            distances[i] = distance
+        
+        sorted_distances = sorted(distances.items(), key=lambda x: (x[1], x[0]))
+        print(sorted_distances)
+        return sorted_distances[0][0]
 
     def calc_euclid_dist(self, p1, p2, no_of_attrs):
         """Calculate Euclidean distance between two points.
@@ -100,27 +127,41 @@ class KMeans:
         """
         dist_sum = 0.0
         for i in range(no_of_attrs):
-            dist_sum += p1[i] ** 2 + p2[i] ** 2
+            dist_sum += ( p1[i] - p2[i]) ** 2
 
         dist = math.sqrt(dist_sum)
         return dist
 
 
-
-
-
 if __name__ == "__main__":
-    # parse argument
+    # Parse argument
     parser = argparse.ArgumentParser()
     parser.add_argument("-k", help="Number of clusters, default 3", \
-                        type=int, default=3)
+        type=int, default=3)
     args = parser.parse_args()
 
-    # check k value
+    # Check k value
     if args.k <= 0:
         raise ValueError("Invalid k. k should be > 0", args.k)
-
+    
+    # read data
     df = read_file('Iris.csv')
-    kmeans = KMeans(3, df)
+
+    # Partition
+    #training_set, testing_set = bootstrap(df, df.shape[0])
+    
+
+    # seperate feature and class values
+    # x_train = training_set.iloc[:, 1:5]
+    # y_train = training_set.iloc[:, 0]
+    # x_test = testing_set.iloc[:, 1:5]
+    # y_train = testing_set.iloc[:, 0]
+    x_train = df.iloc[:, 0:4]
+    y_train = df.iloc[:, 4]
+    print(y_train)
+
+    # K-Means
+    kmeans = KMeans(3, x_train, y_train)
     kmeans.initialize()
+    kmeans.train()
     pass
