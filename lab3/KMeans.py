@@ -71,7 +71,7 @@ class KMeans:
 
     """
 
-    def __init__(self, k, x_train, y_train):
+    def __init__(self, k, x_train, y_train, random_seed=None, iterations=10):
         self.k = k
         self.x_train = x_train
         self.y_train = y_train
@@ -79,6 +79,8 @@ class KMeans:
         self.length = len(self.x_train)
         self.centroids = list()
         self.clusters = list()
+        if random_seed:
+            random.seed(random_seed)
         pass
 
     def initialize(self):
@@ -89,11 +91,19 @@ class KMeans:
             index = random.randrange(self.length)
             self.centroids.append(x_train.iloc[index, :].values)
 
+        print("========Initial Centroids========")
+        print(self.centroids)
+
     def train(self):
+
         for i in range(self.length):
             centroid = self.find_cosest_cluster(i)
             self.clusters.append(centroid)
-        print(self.clusters)
+        
+        pass
+
+    def update_centroid(self):
+        
         pass
 
     def find_cosest_cluster(self, point):
@@ -111,7 +121,6 @@ class KMeans:
             distances[i] = distance
         
         sorted_distances = sorted(distances.items(), key=lambda x: (x[1], x[0]))
-        print(sorted_distances)
         return sorted_distances[0][0]
 
     def calc_euclid_dist(self, p1, p2, no_of_attrs):
@@ -158,10 +167,9 @@ if __name__ == "__main__":
     # y_train = testing_set.iloc[:, 0]
     x_train = df.iloc[:, 0:4]
     y_train = df.iloc[:, 4]
-    print(y_train)
 
     # K-Means
-    kmeans = KMeans(3, x_train, y_train)
+    kmeans = KMeans(3, x_train, y_train, 1)
     kmeans.initialize()
     kmeans.train()
     pass
