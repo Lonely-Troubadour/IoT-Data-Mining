@@ -15,6 +15,8 @@ License: MIT License
 import argparse
 import pandas as pd
 import math
+import random
+
 
 def read_file(file_path):
     """Read data file from disk.
@@ -29,23 +31,92 @@ def read_file(file_path):
     df = pd.read_csv(file_path, names=col_names)
     return df
 
-def calc_euclid_dist(p1, p2, no_of_attrs):
-    sum = 0.0
-    for i in range(no_of_attrs):
-        sum += p1[i] ** 2 + p2[i] ** 2
 
-    dist = math.sqrt(sum)
-    return dist
+def bootstrap(data, length):
+    """Partition the data set to training set and testing set.
+
+    Args:
+        data (pandas.DataFrame): Data frame that contains the data set.
+        length (int): The length of data set.
+
+    Return:
+        training set and testing set.
+    """
+    index = random.randint(0, length - 1)
+    training_set = pd.DataFrame()
+    testing_set = pd.DataFrame()
+    index_set = set()
+
+    # Select training set
+    for _ in range(length):
+        index_set.add(index)
+        row = data.iloc[index]
+        training_set = training_set.append(row)
+        index = random.randint(0, length - 1)
+
+    # Let the remaining to be testing set
+    for i in range(length):
+        if i not in index_set:
+            testing_set = testing_set.append((data.iloc[i]))
+
+    return training_set, testing_set
+
+
+class KMeans:
+    """K-Means clustering method.
+    
+    Attributes:
+
+
+    """
+
+    def __init__(self, k, data_set):
+        self.k = k
+        self.data_set = data_set
+        pass
+
+    def initialize(self):
+        """Initialize algorithm. Arbitrarily choose k objects as initial cluster
+        centers.
+        """
+        for _ in range(self.k):
+            index = random.randrange(len(self.data_set))
+
+        pass
+
+    def calc_euclid_dist(self, p1, p2, no_of_attrs):
+        """Calculate Euclidean distance between two points.
+
+        Args:
+            p1: Point 1
+            p2: Point 2
+            no_of_attrs: Number of attributes
+
+        Returns:
+            Euclidean distance between 2 points.
+        """
+        dist_sum = 0.0
+        for i in range(no_of_attrs):
+            dist_sum += p1[i] ** 2 + p2[i] ** 2
+
+        dist = math.sqrt(dist_sum)
+        return dist
+
+
+
+
 
 if __name__ == "__main__":
-    # parse arguement
+    # parse argument
     parser = argparse.ArgumentParser()
-    parser.add_argument("-k", help="Number of clusters, defualt 3", \
-        type=int, default=3)
-    args=parser.parse_args()
+    parser.add_argument("-k", help="Number of clusters, default 3", \
+                        type=int, default=3)
+    args = parser.parse_args()
 
     # check k value
-    if (args.k <= 0):
+    if args.k <= 0:
         raise ValueError("Invalid k. k should be > 0", args.k)
-    
+
+    df = read_file('Iris.csv')
+
     pass
