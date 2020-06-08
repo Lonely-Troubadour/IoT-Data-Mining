@@ -71,7 +71,7 @@ class KMeans:
 
     """
 
-    def __init__(self, k, x_train, y_train, random_seed=None, iterations=10):
+    def __init__(self, k, x_train, y_train, random_seed=None, max_iter=10):
         self.k = k
         self.x_train = x_train
         self.y_train = y_train
@@ -79,6 +79,7 @@ class KMeans:
         self.length = len(self.x_train)
         self.centroids = list()
         self.clusters = list()
+        self.max_iter = max_iter
         if random_seed:
             random.seed(random_seed)
         pass
@@ -95,11 +96,11 @@ class KMeans:
         print(self.centroids)
 
     def train(self):
-
-        for i in range(self.length):
-            centroid = self.find_cosest_cluster(i)
-            self.clusters.append(centroid)
-        
+        for _ in range(self.max_iter):
+            for i in range(self.length):
+                centroid = self.find_cosest_cluster(i)
+                self.clusters.append(centroid)
+                
         pass
 
     def update_centroid(self):
