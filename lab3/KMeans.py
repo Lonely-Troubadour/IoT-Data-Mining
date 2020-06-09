@@ -90,7 +90,7 @@ class KMeans:
     """
 
     def __init__(self, k, x_train, y_train, random_seed=None, iterations=10, verbose=False):
-        """Initialize K-Mneas clusterinf algorithm.
+        """Initialize K-Means clustering algorithm.
 
         Args:
             k (int): Number of clusters.
@@ -174,7 +174,7 @@ class KMeans:
     def update_clusters(self):
         """Update data points' assignment to clusters"""
         for i in range(self.length):
-            centroid = self.find_cosest_cluster(self.x_train.iloc[i])
+            centroid = self.find_closest_cluster(self.x_train.iloc[i])
             self.clusters[i] = centroid
 
         if len(set(self.clusters)) < 3:
@@ -208,12 +208,12 @@ class KMeans:
     def predict(self, data_set):
         y_predict = list()
         for i in range(len(data_set)):
-            centroid = self.find_cosest_cluster(data_set.iloc[i])
+            centroid = self.find_closest_cluster(data_set.iloc[i])
             y_predict.append(self.labels[centroid])
 
         return y_predict
 
-    def find_cosest_cluster(self, point):
+    def find_closest_cluster(self, point):
         """Find the closest cluster head.
         
         Args:
