@@ -8,6 +8,7 @@ Example:
     $ python KMeans.py
     $ python KMeans.py -k num_of_clusters
     $ python KMeans.py -k 3
+    $ python KMeans.py -v
 
 Author: Yongjian Hu
 License: MIT License
@@ -82,49 +83,104 @@ def bootstrap(data, length):
 
 
 class KMeans:
-    """K-Means clustering method.
+    """K-Means clustering algorithm model.
     
     Attributes:
-
-
+        k (int): Number of clusters.
+        x_train (pandas.DataFrame): Training set.
+        y_train (pandas.Series): Classes of training set.
+        feature_num (int): Number of features.
+        length (int): Total length of data set.
+        random_seed (int): Random seed.
+        clusters (list): List of cluster number of corresponding data sample.
+        labels (list): Corresponding label of each cluster.
+        max_iter (int): Maximum number of iterations
+        init (str): "Random" for basic random k initialization. "PlusPlus" for KMeans++ k initialization (Default).
+        iterations (int): Maximum iterations.
+        verbose (bool): Verbose or not.
     """
 
-    def __init__(self, k, x_train, y_train, random_seed=None, iterations=10, verbose=False):
-        """Initialize K-Mneas clusterinf algorithm.
+    def __init__(self, k, x_train, y_train, random_seed=None, init="PlusPlus", iterations=10, verbose=False):
+        """Initialize K-Means clustering algorithm.
 
         Args:
             k (int): Number of clusters.
             x_train (pandas.DataFrame): Training set.
             y_train (pandas.Series): Classes of training set.
             random_seed (int): Random seed.
+            init (str): "Random" for basic random k initialization. "PlusPlus" for KMeans++ k initialization (Default).
             iterations (int): Maximum iterations.
+            verbose (bool): Verbose or not.
         """
         self.k = k
         self.x_train = x_train
         self.y_train = y_train
         self.feature_num = x_train.shape[1]
         self.length = len(self.x_train)
-        self.centroids = list()
         self.clusters = [0] * self.length
         if random_seed:
             random.seed(random_seed)
         self.max_iter = iterations
         self.labels = dict()
         self.verbose = verbose
-        pass
+        if init == "Random":
+            self.centroids = self.k_initialize()
+        elif init == "PlusPlus":
+            self.centroids = self.plus_initialize()
 
-    def initialize(self):
-        """Initialize algorithm. Arbitrarily choose k objects as initial cluster
-        centers.
+    def plus_initialize(self):
+        """K-Means++ initialize k centroids.
+
+        Returns:
+            Centroids' coordinates
         """
+        index = random.randrange(self.length)
+
+        # First random centroid
+        centroids = list()
+        centroids.append(self.x_train.iloc[index].values)
+
+        # Candidates
+        candidates = [0] * self.length
+        distances = [0] * self.length
+
+        for i in range(1, self.k):
+            # Get distances of all points to closest cluster
+            for j in range(self.length):
+                candidates[j] = self.find_closest_cluster(self.x_train.iloc[j], centroids)
+                distances[j] = self.calc_euclid_dist(self.x_train.iloc[j], centroids[candidates[j]], self.feature_num)
+
+            dist_sum = sum(distances)
+            probability = [distances[i] / dist_sum for i in range(len(distances))]
+
+            next_rand = random.random()
+            prob_sum = 0
+            for j in range(len(probability)):
+                prob_sum += probability[j]
+                if next_rand < prob_sum:
+                    centroids.append(self.x_train.iloc[j].values)
+                    break
+
+        return centroids
+
+    def k_initialize(self):
+        """Initial step of algorithm. Arbitrarily choose k objects as initial cluster
+        centers.
+
+        Returns:
+            Centroids' coordinates.
+        """
+        centroids = list()
         for _ in range(self.k):
             index = random.randrange(self.length)
-            self.centroids.append(self.x_train.iloc[index, :].values)
+            centroids.append(self.x_train.iloc[index, :].values)
 
         if self.verbose:
             print("========Initial Centroids========")
-            print(self.centroids)
+            print(centroids)
             print()
+
+        return centroids
 
     def train(self):
         """Train the K-Means model."""
@@ -139,9 +195,13 @@ class KMeans:
             i += 1
 
         self.labels = self.get_labels()
-        # self.labels = self.get_labels()
 
     def get_labels(self):
+        """Get labels of each cluster.
+
+        Returns:
+            Labels with corresponding cluster number.
+        """
         labels = dict.fromkeys(self.y_train.unique())
         clusters_labels = dict()
         for key in labels.keys():
@@ -174,7 +234,7 @@ class KMeans:
     def update_clusters(self):
         """Update data points' assignment to clusters"""
         for i in range(self.length):
-            centroid = self.find_cosest_cluster(self.x_train.iloc[i])
+            centroid = self.find_closest_cluster(self.x_train.iloc[i], self.centroids)
             self.clusters[i] = centroid
 
         if len(set(self.clusters)) < 3:
@@ -206,25 +266,31 @@ class KMeans:
             return True
 
     def predict(self, data_set):
+        """Predict based on trained model and given testing set.
+
+        Returns:
+            Prediction result.
+        """
         y_predict = list()
         for i in range(len(data_set)):
-            centroid = self.find_cosest_cluster(data_set.iloc[i])
+            centroid = self.find_closest_cluster(data_set.iloc[i], self.centroids)
             y_predict.append(self.labels[centroid])
 
         return y_predict
 
-    def find_cosest_cluster(self, point):
+    def find_closest_cluster(self, point, centroids):
         """Find the closest cluster head.
         
         Args:
+            centroids (list): The list of coordinates of centroids.
             point (array): The features array of data point.
 
         Returns:
             Closest cluster centroid index.
         """
         distances = dict()
-        for i in range(self.k):
-            distance = self.calc_euclid_dist(self.centroids[i], point, self.feature_num)
+        for i in range(len(centroids)):
+            distance = self.calc_euclid_dist(centroids[i], point, self.feature_num)
             distances[i] = distance
 
         sorted_distances = sorted(distances.items(), key=lambda x: (x[1], x[0]))
@@ -251,6 +317,11 @@ class KMeans:
 
 
 def calc_accuracy(predict, labels):
+    """Calculate accuracy
+
+    Returns:
+        Accuracy.
+    """
     return sum(predict == labels) / len(labels)
 
 
@@ -280,8 +351,8 @@ def bootstrap_accuracy(data_set, k=20, verbose=False):
         # x_train, x_test = feature_scaler(x_train, x_test)
 
         # K-Means train
-        kmeans = KMeans(3, x_train, y_train, verbose)
-        kmeans.initialize()
+        kmeans = KMeans(3, x_train, y_train, init="Random", verbose=verbose)
+        kmeans.plus_initialize()
         kmeans.train()
 
         # Predict
@@ -317,5 +388,5 @@ if __name__ == "__main__":
 
     # read data
     df = read_file('Iris.csv')
-    acc = bootstrap_accuracy(df, 10)
+    acc = bootstrap_accuracy(df, 20)
     print("Model accuracy is {:.2f}".format(acc))
