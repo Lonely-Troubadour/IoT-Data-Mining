@@ -5,9 +5,9 @@ Homework of IoT Information processing Lab 3. A simple implementation
 of DBSCAN algorithm.
 
 Example:
-    $ python NaiveBayes.py
-    $ python NiaveBayes.py -k num_of_iterations
-    $ python NaiveBayes.py -k 25
+    $ python DBSCAN.py
+    $ python DBSCAN.py -eps 0.4 --minPts 4
+    $ python NaiveBayes.py -v
 
 Author: Yongjian Hu
 License: MIT License
@@ -17,6 +17,8 @@ import random
 import math
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
 
 
 def read_file(file_path):
@@ -38,31 +40,80 @@ class DBSCAN:
 
     DBSCAN - Density-Based Spatial Clustering of Applications with Noise.
 
-
+    Attributes:
+        x (pandas.DataFrame): Training data set.
+        y (pandas.DataFrame): Classes of data set.
+        eps (float): Epsilon. Minimum distance. Default 0.5.
+        min_pts (int): Minimum points in the neighbor. Defualt 5
+        length (int): Length of data set.
+        visited (numpy.array): Array of data set visited status. 0 Stands for not visited, 1 opposite.
+        noise (numpy.array): Array of noise. 0 stands for normal data, 1 for noise.
+        clusters (numpy.array): Array of clusters assignments. 0 Stands for noise.
+        cluster_num (int): Number of clusters.
+        verbose (bool): Verbosity. Default false.
     """
 
-    def __init__(self, x, y, random_seed=None, eps=0.5, min_pts=5):
+    def __init__(self, x, y, random_seed=None, eps=0.5, min_pts=5, verbose=False):
         """Initialize DBSCAN algorithm.
 
         Args:
-            x: Training data set.
-            y: Classes of data set.
-            eps: Epsilon. Minimum distance. Default 0.5.
-            min_pts: Minimum points in the neighbor. Defualt 5
+            x (pandas.DataFrame): Training data set.
+            y (pandas.DataFrame): Classes of data set.
+            eps (float): Epsilon. Minimum distance. Default 0.5.
+            min_pts (int): Minimum points in the neighbor. Defualt 5
         """
         self.X = x
         self.y = y
         self.eps = eps
         self.min_pts = min_pts
         self.length = len(x)
-        self.visited = np.zeros(self.length)
-        self.noise = np.zeros(self.length)
-        pass
+        self.visited = np.zeros(self.length, dtype=int)
+        self.noise = np.zeros(self.length, dtype=int)
+        self.clusters = np.zeros(self.length, dtype=int)
+        self.cluster_num = 0
+        self.verbose = verbose
 
     def train(self):
-        # Randomly selected an unvisited object p
+        """Train. Find clusters.
 
-        pass
+        Returns:
+            None.
+        """
+        cluster_num = 0
+        while (self.visited == 0).any():
+            # Randomly selected an unvisited object p
+            p = random.randrange(self.length)
+            while self.visited[p] == 1:
+                p = random.randrange(self.length)
+
+            # Mark p as visited
+            self.visited[p] = 1
+
+            # Get neibors of p
+            neighbors = self.get_neighbors(p)
+
+            if len(neighbors) >= self.min_pts:
+                # New cluster
+                cluster_num += 1
+                self.clusters[p] = cluster_num
+                # For each point in neighborhood N of p
+                while len(neighbors) != 0:
+                    p_prime = neighbors.pop()
+                    if self.visited[p_prime] == 0:
+                        # Mark p' as visited
+                        self.visited[p_prime] = 1
+                        # If p' is core point. Add its neighbors to N.
+                        neighbors_prime = self.get_neighbors(p_prime)
+                        if len(neighbors_prime) >= self.min_pts:
+                            neighbors.extend(neighbors_prime)
+                    # If p' is not yet a member of any cluster
+                    if self.clusters[p_prime] == 0:
+                        self.clusters[p_prime] = cluster_num
+            else:
+                # Mark noise
+                self.noise[p] = 1
+
+        self.cluster_num = cluster_num + 1
 
     def calc_euclid_distance(self, p1, p2):
         """Calculate Euclidean distance between 2 points.
@@ -76,25 +127,72 @@ class DBSCAN:
         """
         return math.sqrt(sum((p1 - p2) ** 2))
 
+    def get_neighbors(self, point):
+        """Get neighbors of the point.
+
+        Args:
+            point (int): Point index.
+
+        Returns:
+            List of neighbor indexes.
+        """
+        neighbors = list()
+        for i in range(self.length):
+            if i != point and self.calc_euclid_distance(self.X.iloc[point], self.X.iloc[i]) <= self.eps:
+                neighbors.append(i)
+        return neighbors
+
+    def get_labels(self):
+        """Get labels of each cluster.
+
+        Returns:
+            Labels with corresponding cluster number.
+        """
+        labels = dict.fromkeys(self.y.unique())
+        cluster_labels = dict()
+        for key in labels.keys():
+            labels[key] = np.zeros(self.cluster_num, dtype=int)
+
+        for i in range(self.length):
+            labels[self.y.iloc[i]][self.clusters[i]] += 1
+
+        for key in labels.keys():
+            cluster_label = np.argmax(labels[key])
+            cluster_labels[cluster_label] = key
+
+        if self.verbose:
+            print("========labels -> cluster no.========")
+            print(labels)
+
+        return cluster_labels
+
 
 if __name__ == "__main__":
     # parse arguement
     parser = argparse.ArgumentParser()
-    parser.add_argument("-k", help="Number of clusters, defualt 3", type=int, default=3)
+    parser.add_argument("-eps", help="Epsilon, minimal distance, defualt 0.5", type=float, default=.5)
+    parser.add_argument("-p", "--minPts", help="Minimal points in one neighbor, default 5", type=int, default=5)
+    parser.add_argument("-v", "--verbose", help="Verbosity", action="store_true")
     args = parser.parse_args()
 
-    # check k value
-    if args.k <= 0:
-        raise ValueError("Invalid k. k should be > 0", args.k)
+    # check args value
+    if args.eps <= 0:
+        raise ValueError("Invalid Epsilon. Epsilon should be > 0", args.eps)
+    if args.minPts <= 0:
+        raise ValueError("Invalid minimum points. min_pts should be > 0", args.minPts)
 
     df = read_file('Iris.csv')
 
+    # Training set seperated into feautres and classes
     x_train = df.iloc[:, 0:4]
     y_train = df.iloc[:, 4]
-    # x_test = testing_set.iloc[:, 1:5]
-    # y_test = testing_set.iloc[:, 0]
 
-    dbscan = DBSCAN(x_train, y_train)
-    print(dbscan.calc_euclid_distance(np.array([1,1,1]), np.array([2,3,4])))
+    # Start runing algorithm
+    dbscan = DBSCAN(x_train, y_train, eps=args.eps, min_pts=args.minPts, verbose=args.verbose)
+    dbscan.train()
+    print("Cluster no. -> class label: " + str(dbscan.get_labels()))
 
-    pass
+    # Plot
+    cmap = ListedColormap(['r', 'g', 'b', 'k'])
+    plt.scatter(x_train.iloc[:, 0], x_train.iloc[:, 2], c=dbscan.clusters, edgecolor='k', s=40)
+    plt.savefig('figure.png', dpi=300)
