@@ -148,7 +148,7 @@ class KMeans:
             # Get distances of all points to closest cluster
             for j in range(self.length):
                 candidates[j] = self.find_closest_cluster(self.x_train.iloc[j], centroids)
-                distances[j] = self.calc_euclid_dist(self.x_train.iloc[j], centroids[candidates[j]], self.feature_num)
+                distances[j] = self.calc_euclid_dist(self.x_train.iloc[j], centroids[candidates[j]])
 
             dist_sum = sum(distances)
             probability = [distances[i] / dist_sum for i in range(len(distances))]
@@ -290,26 +290,25 @@ class KMeans:
         """
         distances = dict()
         for i in range(len(centroids)):
-            distance = self.calc_euclid_dist(centroids[i], point, self.feature_num)
+            distance = self.calc_euclid_dist(centroids[i], point)
             distances[i] = distance
 
         sorted_distances = sorted(distances.items(), key=lambda x: (x[1], x[0]))
         closest_centroid = sorted_distances[0]
         return closest_centroid[0]
 
-    def calc_euclid_dist(self, p1, p2, no_of_attrs):
+    def calc_euclid_dist(self, p1, p2):
         """Calculate Euclidean distance between two points.
 
         Args:
             p1: Point 1
             p2: Point 2
-            no_of_attrs: Number of attributes
 
         Returns:
             Euclidean distance between 2 points.
         """
         dist_sum = 0.0
-        for i in range(no_of_attrs):
+        for i in range(len(p1)):
             dist_sum += (p1[i] - p2[i]) ** 2
 
         dist = math.sqrt(dist_sum)
