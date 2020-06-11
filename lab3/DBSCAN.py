@@ -5,9 +5,12 @@ Homework of IoT Information processing Lab 3. A simple implementation
 of DBSCAN algorithm.
 
 Example:
-    $ python DBSCAN.py
-    $ python DBSCAN.py -eps 0.4 --minPts 4
-    $ python NaiveBayes.py -v
+    $ python DBSCAN.py # Default
+    $ python DBSCAN.py -h # Help message
+    $ python DBSCAN.py -eps epsilon
+    $ python DBSCAN.py -p minimal_Points
+    $ python DBSCAN.py -v # Verbosity turned on
+    $ python DBSCAN.py -r random_seed
 
 Author: Yongjian Hu
 License: MIT License
@@ -157,10 +160,12 @@ class DBSCAN:
             labels[self.y.iloc[i]][self.clusters[i]] += 1
 
         for key in labels.keys():
-            cluster_label = np.argmax(labels[key])
-            cluster_labels[cluster_label] = key
+            index = np.argmax(labels[key])
+            cluster_labels[index] = key
 
         if self.verbose:
+            print("Number of clusters: " + str(self.cluster_num - 1))
+            print("Note: cluster num 0 is the set of noise points.")
             print("========labels -> cluster no.========")
             print(labels)
 
@@ -173,14 +178,35 @@ if __name__ == "__main__":
     parser.add_argument("-eps", help="Epsilon, minimal distance, defualt 0.5", type=float, default=.5)
     parser.add_argument("-p", "--minPts", help="Minimal points in one neighbor, default 5", type=int, default=5)
     parser.add_argument("-v", "--verbose", help="Verbosity", action="store_true")
+    parser.add_argument("-r", "--rand", help="Random seed, default None", type=int, default=None)
     args = parser.parse_args()
 
+
+    print("==========Parameters===========")
     # check args value
     if args.eps <= 0:
         raise ValueError("Invalid Epsilon. Epsilon should be > 0", args.eps)
+    else:
+        print("- Epsilon: " + str(args.eps))
+
     if args.minPts <= 0:
         raise ValueError("Invalid minimum points. min_pts should be > 0", args.minPts)
+    else:
+        print("- MinPts: " + str(args.minPts))
 
+    if args.rand != None and args.rand <= 0:
+        raise ValueError("Invalid random seed.", args.rand)
+    else:
+        print("- Random seed: " + str(args.rand))
+
+    if args.verbose:
+        print("- Verbosity turned on")
+    
+    print("DBSCAN running...")
+    print("===============================")
+    print()
+
+    # Read data
     df = read_file('Iris.csv')
 
     # Training set seperated into feautres and classes
@@ -188,9 +214,9 @@ if __name__ == "__main__":
     y_train = df.iloc[:, 4]
 
     # Start runing algorithm
-    dbscan = DBSCAN(x_train, y_train, eps=args.eps, min_pts=args.minPts, verbose=args.verbose)
+    dbscan = DBSCAN(x_train, y_train, random_seed=args.rand, eps=args.eps, min_pts=args.minPts, verbose=args.verbose)
     dbscan.train()
-    print("Cluster no. -> class label: " + str(dbscan.get_labels()))
+    print("========Cluster no. -> class label:======== \n" + str(dbscan.get_labels()))
 
     # Plot
     cmap = ListedColormap(['r', 'g', 'b', 'k'])

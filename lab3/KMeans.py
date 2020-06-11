@@ -5,10 +5,13 @@ Homework of IoT Information processing Lab 3. A simple implementation
 of K-Means clustering algorithm.
 
 Example:
-    $ python KMeans.py
+    $ python KMeans.py # Default
+    $ python DBSCAN.py -h # Help message
     $ python KMeans.py -k num_of_clusters
-    $ python KMeans.py -k 3
-    $ python KMeans.py -v
+    $ python KMeans.py -v # Verbosity turned on.
+    $ python KMeans.py -r random_seed
+    $ python kMeans.py -i num_of_iterations
+    $ python KMeans.py -p # K-Means++
 
 Author: Yongjian Hu
 License: MIT License
@@ -19,6 +22,8 @@ import math
 import random
 from collections import defaultdict
 from array import array
+import numpy as np
+import traceback
 
 
 def read_file(file_path):
@@ -33,23 +38,6 @@ def read_file(file_path):
     col_names = ["x1", "x2", "x3", "x4", "class"]
     data_frame = pd.read_csv(file_path, names=col_names)
     return data_frame
-
-
-def feature_scaler(x_train, x_test):
-    """Feature scaler. Standardize the features.
-
-    Args:
-        x_train (pandas.DataFrame): features of training set.
-        x_test (pandas.DataFrame): features of testing set.
-
-    Returns:
-        Training set and testing set after scaling.
-    """
-    mean = x_train.mean()
-    std = x_train.std(ddof=0)
-    x_train = (x_train - mean) / std
-    x_test = (x_test - mean) / std
-    return x_train, x_test
 
 
 def bootstrap(data, length):
@@ -100,7 +88,7 @@ class KMeans:
         verbose (bool): Verbose or not.
     """
 
-    def __init__(self, k, x_train, y_train, random_seed=None, init="PlusPlus", iterations=10, verbose=False):
+    def __init__(self, k, x_train, y_train, random_seed=None, init="PlusPlus", iterations=20, verbose=False):
         """Initialize K-Means clustering algorithm.
 
         Args:
@@ -203,33 +191,35 @@ class KMeans:
             Labels with corresponding cluster number.
         """
         labels = dict.fromkeys(self.y_train.unique())
-        clusters_labels = dict()
+        cluster_labels = dict()
+
+        # Initialize
         for key in labels.keys():
             labels[key] = array('i', [0 for _ in range(self.k)])
 
+        # Count clusters for each point of each class
         for i in range(self.length):
             labels[self.y_train.iloc[i]][self.clusters[i]] += 1
 
+        # Get labels
         for key in labels.keys():
-            maximum = max(labels[key])
-            for i in range(len(labels[key])):
-                if labels[key][i] == maximum:
-                    if i in clusters_labels:
-                        print("WARNING! Same class for different clusters.")
-                        print("Trying to fix...")
+            index = np.argmax(labels[key])
+            if index in cluster_labels:
+                # if self.verbose:
+                #     print("WARNING! Same class for different clusters.")
+                #     print("Trying to fix...")
 
-                        while i in clusters_labels and len(clusters_labels) != 3:
-                            i = (i + 1) % self.k
-
-                        print("Done!")
-                    clusters_labels[i] = key
-                    break
+                # while index in cluster_labels and len(cluster_labels) != 3:
+                #     index = (index + 1) % self.k
+                raise Exception("Smae class for different clusters.")
+            
+            cluster_labels[index] = key
 
         if self.verbose:
             print(labels)
-            print(clusters_labels)
+            print(cluster_labels)
 
-        return clusters_labels
+        return cluster_labels
 
     def update_clusters(self):
         """Update data points' assignment to clusters"""
@@ -238,7 +228,7 @@ class KMeans:
             self.clusters[i] = centroid
 
         if len(set(self.clusters)) < 3:
-            raise Exception("Bad initialization. Clusters fewer than expected", len(self.clusters))
+            raise Exception("Bad initialization. Clusters labels fewer than expected", len(set(self.clusters)))
 
     def update_centroid(self):
         """Update centroids
@@ -324,19 +314,22 @@ def calc_accuracy(predict, labels):
     return sum(predict == labels) / len(labels)
 
 
-def bootstrap_accuracy(data_set, k=20, verbose=False):
+def bootstrap_accuracy(data_set, iter=20, k=3, verbose=False, rand_seed=None, init="Random"):
     """Calculate model accuracy using .632 bootstrap.
 
     Args:
         data_set (pandas.DataFrame): Data set.
-        k (int): The number of iterations. Default is 20
+        iter (int): The number of iterations. Default is 20.
+        k (int): The number of clusters.
         verbose (bool): Turn on verbosity or not.
+        rand_seed (int): Random seed. Default None.
+        init (str): Iinit method. Default ranom. Could be K-Means++.
 
     Returns:
         Accuracy of the model.
     """
     acc_sum = 0
-    for i in range(k):
+    for i in range(iter):
         # Partition
         training_set, testing_set = bootstrap(data_set, data_set.shape[0])
 
@@ -346,46 +339,77 @@ def bootstrap_accuracy(data_set, k=20, verbose=False):
         x_test = testing_set.iloc[:, 1:5]
         y_test = testing_set.iloc[:, 0]
 
-        # Feature scaling
-        # x_train, x_test = feature_scaler(x_train, x_test)
-
         # K-Means train
-        kmeans = KMeans(3, x_train, y_train, init="Random", verbose=verbose)
-        kmeans.plus_initialize()
-        kmeans.train()
+        success = False
+        while not success:
+            try:
+                kmeans = KMeans(k, x_train, y_train, random_seed=rand_seed, init=init, verbose=verbose)
+                kmeans.plus_initialize()
+                kmeans.train()
+                
+                # Predict
+                predict_train = kmeans.predict(x_train)
+                acc_train = calc_accuracy(predict_train, y_train)
+                predict_test = kmeans.predict(x_test)
+                acc_test = calc_accuracy(predict_test, y_test)
 
-        # Predict
-        predict_train = kmeans.predict(x_train)
-        acc_train = calc_accuracy(predict_train, y_train)
-        predict_test = kmeans.predict(x_test)
-        acc_test = calc_accuracy(predict_test, y_test)
+                # Accuracy
+                acc_test = calc_accuracy(predict_train, y_train)
+                acc_train = calc_accuracy(predict_test, y_test)
 
-        # Accuracy
-        acc_test = calc_accuracy(predict_train, y_train)
-        acc_train = calc_accuracy(predict_test, y_test)
+                success = True
+            except Exception as e:
+                print("\nException: " + str(e))
+                print("Try again...\n")
 
-        print("Iteration " + str(i) + ": ", end="")
+        print("Iteration " + str(i+1) + ": ", end="")
         print("Acc_test = " + str(acc_test) + ", Acc_train = " + str(acc_train))
         acc_sum += 0.632 * acc_test + 0.368 * acc_train
 
-    return acc_sum / k
+    return acc_sum / iter
 
 
 if __name__ == "__main__":
     # Parse argument
     parser = argparse.ArgumentParser()
     parser.add_argument("-k", help="Number of clusters, default 3", type=int, default=3)
+    parser.add_argument("-r", "--rand", help="Random seed, default None", type=int, default=None)
     parser.add_argument("-v", "--verbose", help='Verbose', action="store_true")
+    parser.add_argument("-i", "--iter", help="Number of iterations, default 20", type=int, default=20)
+    parser.add_argument("-p", "--plusplus", help='Enable K-Means++', action="store_true")
     args = parser.parse_args()
 
-    # Check k value
+    print("==========Parameters===========")
+    # Check arguments
     if args.k <= 0:
         raise ValueError("Invalid k. k should be > 0", args.k)
+    else:
+        print("- Cluster number: " + str(args.k))
 
     if args.verbose:
-        print("Verbosity turned on.")
+        print("- Verbosity turned on")
 
+    if args.rand != None and args.rand <= 0:
+        raise ValueError("Invalid random seed.", args.rand)
+    else:
+        print("- Random seed: " + str(args.rand))
+
+    if args.iter <= 0:
+        raise ValueError("Invalid random seed.", args.rand)
+    else:
+        print("- Number of iterations: " + str(args.iter))
+
+    if args.plusplus:
+        init="PlusPlus"
+        print("K-Means++ Running...")
+    else:
+        init="Random"
+        print("K-Means Running...")
+
+    print("===============================")
+    print()
+    
     # read data
     df = read_file('Iris.csv')
-    acc = bootstrap_accuracy(df, 20)
+    acc = bootstrap_accuracy(df, iter=args.iter, k=args.k, rand_seed=args.rand, verbose=args.verbose, init=init)
     print("Model accuracy is {:.2f}".format(acc))
