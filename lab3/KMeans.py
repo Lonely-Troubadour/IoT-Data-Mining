@@ -17,13 +17,12 @@ Author: Yongjian Hu
 License: MIT License
 """
 import argparse
-import pandas as pd
 import math
 import random
-from collections import defaultdict
 from array import array
+
 import numpy as np
-import traceback
+import pandas as pd
 
 
 def read_file(file_path):
@@ -130,7 +129,7 @@ class KMeans:
 
         # Candidates
         candidates = [0] * self.length
-        distances = [0] * self.length
+        distances = [.0] * self.length
 
         for i in range(1, self.k):
             # Get distances of all points to closest cluster
@@ -212,7 +211,7 @@ class KMeans:
                 # while index in cluster_labels and len(cluster_labels) != 3:
                 #     index = (index + 1) % self.k
                 raise Exception("Smae class for different clusters.")
-            
+
             cluster_labels[index] = key
 
         if self.verbose:
@@ -346,7 +345,7 @@ def bootstrap_accuracy(data_set, iter=20, k=3, verbose=False, rand_seed=None, in
                 kmeans = KMeans(k, x_train, y_train, random_seed=rand_seed, init=init, verbose=verbose)
                 kmeans.plus_initialize()
                 kmeans.train()
-                
+
                 # Predict
                 predict_train = kmeans.predict(x_train)
                 acc_train = calc_accuracy(predict_train, y_train)
@@ -362,7 +361,7 @@ def bootstrap_accuracy(data_set, iter=20, k=3, verbose=False, rand_seed=None, in
                 print("\nException: " + str(e))
                 print("Try again...\n")
 
-        print("Iteration " + str(i+1) + ": ", end="")
+        print("Iteration " + str(i + 1) + ": ", end="")
         print("Acc_test = " + str(acc_test) + ", Acc_train = " + str(acc_train))
         acc_sum += 0.632 * acc_test + 0.368 * acc_train
 
@@ -389,7 +388,7 @@ if __name__ == "__main__":
     if args.verbose:
         print("- Verbosity turned on")
 
-    if args.rand != None and args.rand <= 0:
+    if args.rand is not None and args.rand <= 0:
         raise ValueError("Invalid random seed.", args.rand)
     else:
         print("- Random seed: " + str(args.rand))
@@ -400,15 +399,15 @@ if __name__ == "__main__":
         print("- Number of iterations: " + str(args.iter))
 
     if args.plusplus:
-        init="PlusPlus"
+        init = "PlusPlus"
         print("K-Means++ Running...")
     else:
-        init="Random"
+        init = "Random"
         print("K-Means Running...")
 
     print("===============================")
     print()
-    
+
     # read data
     df = read_file('Iris.csv')
     acc = bootstrap_accuracy(df, iter=args.iter, k=args.k, rand_seed=args.rand, verbose=args.verbose, init=init)

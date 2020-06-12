@@ -16,12 +16,12 @@ Author: Yongjian Hu
 License: MIT License
 """
 import argparse
-import random
 import math
-import pandas as pd
-import numpy as np
+import random
+
 import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap
+import numpy as np
+import pandas as pd
 
 
 def read_file(file_path):
@@ -34,8 +34,8 @@ def read_file(file_path):
         df. The data frame object contains the data set.
     """
     col_names = ["x1", "x2", "x3", "x4", "class"]
-    df = pd.read_csv(file_path, names=col_names)
-    return df
+    data_set = pd.read_csv(file_path, names=col_names)
+    return data_set
 
 
 class DBSCAN:
@@ -74,6 +74,8 @@ class DBSCAN:
         self.noise = np.zeros(self.length, dtype=int)
         self.clusters = np.zeros(self.length, dtype=int)
         self.cluster_num = 0
+        if random_seed:
+            random.seed(random_seed)
         self.verbose = verbose
 
     def train(self):
@@ -181,7 +183,6 @@ if __name__ == "__main__":
     parser.add_argument("-r", "--rand", help="Random seed, default None", type=int, default=None)
     args = parser.parse_args()
 
-
     print("==========Parameters===========")
     # check args value
     if args.eps <= 0:
@@ -194,14 +195,14 @@ if __name__ == "__main__":
     else:
         print("- MinPts: " + str(args.minPts))
 
-    if args.rand != None and args.rand <= 0:
+    if args.rand is not None and args.rand <= 0:
         raise ValueError("Invalid random seed.", args.rand)
     else:
         print("- Random seed: " + str(args.rand))
 
     if args.verbose:
         print("- Verbosity turned on")
-    
+
     print("DBSCAN running...")
     print("===============================")
     print()
@@ -219,6 +220,5 @@ if __name__ == "__main__":
     print("========Cluster no. -> class label:======== \n" + str(dbscan.get_labels()))
 
     # Plot
-    cmap = ListedColormap(['r', 'g', 'b', 'k'])
     plt.scatter(x_train.iloc[:, 0], x_train.iloc[:, 2], c=dbscan.clusters, edgecolor='k', s=40)
     plt.savefig('figure.png', dpi=300)
