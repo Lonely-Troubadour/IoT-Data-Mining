@@ -1,3 +1,4 @@
 # Requirements
 - PyQt5
 - opencv-python-headless
+- python 3.7

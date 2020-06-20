@@ -1,6 +1,5 @@
 import sys
 from ImageProcessor import ImageProcessor
-import cv2 as cv
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QApplication, QWidget, QGridLayout, QPushButton, QLabel, QFileDialog, QMessageBox
 from PyQt5.QtWidgets import QToolTip, QDesktopWidget
@@ -16,6 +15,7 @@ class ImgProcGUI(QWidget):
         self.btn_process = QPushButton('Process', self)
         self.btn_save = QPushButton('Save', self)
         self.btn_open = QPushButton('Open', self)
+        self.extentions = "*.png *.jpg *.jpeg *.tiff *.bmp *.gif *.tfrecords"
         self.initUI()
 
     def initUI(self):
@@ -42,7 +42,7 @@ class ImgProcGUI(QWidget):
     def load_image(self):
         # Load image from disk
         fp, tmp = QFileDialog.getOpenFileName(self, caption='Open Image', directory='./',
-                                              filter='*.png *.jpg *.bmp')
+                                              filter=self.extentions)
 
         if fp is '':
             return
@@ -50,7 +50,7 @@ class ImgProcGUI(QWidget):
         # Use Image Processor class to load image file
         self.img_proc.load_img(fp)
 
-        if self.img_proc.img.size == 1:
+        if self.img_proc.get_img() is None or self.img_proc.get_img().size == 1:
             return
 
         # Show image
@@ -59,10 +59,11 @@ class ImgProcGUI(QWidget):
     def save_img(self):
         # Get file path to save
         fp, tmp = QFileDialog.getSaveFileName(self, caption='Save Image', directory='./',
-                                              filter='*.png *.jpg *.bmp')
+                                              filter=self.extentions)
         if fp is '':
             return
-        if self.img_proc.img.size == 1:
+
+        if self.img_proc.get_img() is None or self.img_proc.get_img().size == 1:
             return
 
         # Save image file by image processor
@@ -77,7 +78,7 @@ class ImgProcGUI(QWidget):
         bytes_perline = 3 * width
 
         # Create QImage
-        q_img = QImage(self.img_proc.img.data, width, height, bytes_perline, QImage.Format_RGB888)
+        q_img = QImage(self.img_proc.get_img().data, width, height, bytes_perline, QImage.Format_RGB888)
         # Show QImage
         self.label.setPixmap(QPixmap.fromImage(q_img))
         self.center(width, height)
@@ -94,7 +95,7 @@ class ImgProcGUI(QWidget):
     #     else:
     #         event.ignore()
 
-    def center(self,x_offset=None, y_offset=None):
+    def center(self, x_offset=None, y_offset=None):
         """Center the window"""
 
         # DIACARDED METHOD
@@ -108,7 +109,8 @@ class ImgProcGUI(QWidget):
         if x_offset is not None and y_offset is not None:
             self.move((qrect_screen.width() - x_offset) / 2, (qrect_screen.height() - y_offset) / 2)
         else:
-            self.move((qrect_screen.width() - qrect_self.width()) / 2, (qrect_screen.height() - qrect_self.height()) / 2)
+            self.move((qrect_screen.width() - qrect_self.width()) / 2,
+                      (qrect_screen.height() - qrect_self.height()) / 2)
 
 
 def main():
