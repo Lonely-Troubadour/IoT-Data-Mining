@@ -1,7 +1,7 @@
+import math
+
 import cv2 as cv
 import numpy as np
-import time
-import math
 
 
 class ImageProcessor:
@@ -88,13 +88,10 @@ class ImageProcessor:
             Single channel image.
         """
         if mode == 'b':
-            name = 'Blue'
             img = self.img[:, :, 2]
         elif mode == 'r':
-            name = 'Red'
             img = self.img[:, :, 0]
         elif mode == 'g':
-            name = ' Green'
             img = self.img[:, :, 1]
         else:
             raise Exception("Color option not exist!")
@@ -175,7 +172,6 @@ class ImageProcessor:
                     if 0 <= dst[0] < self.height:
                         if 0 <= dst[1] < self.width:
                             img[dst[0]][dst[1]] = self.img[i][j]
-
 
         self.processed_img = img
         return img
@@ -281,7 +277,7 @@ class ImageProcessor:
             raise ValueError('Quantization level wrong! Must be exponential value of 2')
 
         # Turn image from RGB to Gray scale image
-        img = self.create_blank_img(channels=1)
+        img = self.create_blank_img(channels=None)
         step = 256 / level
 
         for i in range(self.height):
@@ -313,7 +309,10 @@ class ImageProcessor:
         if not height or not width:
             raise Exception("Invalid height or width!")
 
-        size = (height, width, channels)
+        if channels is not None:
+            size = (height, width, channels)
+        else:
+            size = (height, width)
         img = np.zeros(size, dtype=np.uint8)
         return img
 
@@ -362,7 +361,7 @@ class ImageProcessor:
         hist_c = np.zeros(256, dtype=np.uint32)
         hist_c[0] = hist[0]
         for i in range(1, 256):
-            hist_c[i] = hist_c[i-1] + hist[i]
+            hist_c[i] = hist_c[i - 1] + hist[i]
 
         factor = 255.0 / (self.height * self.width)
         for i in range(self.height):
@@ -374,32 +373,44 @@ class ImageProcessor:
         self.processed_img = img
         return img
 
-    def smooth(self):
+    def smooth(self, h=None):
         height = self.height
         width = self.width
         img = self.trans_gray()
         filtered_img = self.create_blank_img()
-        # TODO h= np.array()
+
+        if h is None:
+            h = np.array([[1, 2, 1], [2, 4, 2], [1, 2, 1]]) / 16.0
 
         for i in range(height):
             for j in range(width):
-                if i in [0, height-1] or j in [0, width-1]:
+                if i in [0, height - 1] or j in [0, width - 1]:
                     filtered_img[i][j] = img[i][j]
                 else:
-                    x = img[i-1:i+1, j-1:j+1]
-                    # TODO filtered_img[i][j] = np.dot(x, )
-        pass
+                    x = img[i - 1:i + 2, j - 1:j + 2]
+                    m = np.multiply(x, h)
+                    filtered_img[i][j] = m.sum()
 
+        self.processed_img = filtered_img
+        return filtered_img
 
-if __name__ == '__main__':
-    ipg = ImageProcessor('bauhaus.jpg')
-    # ipg.shift(-20, -30, cut=True)
-    # print(ipg.get_shape())
-    # ipg.rotate(90, clockwise=False, cut=True)
-    # ipg.resize(m=0.5, n=2)
-    # ipg.show(ipg.trans_gray())
-    # ipg.show(ipg.get_hist())
-    # ipg.show(ipg.hist_equalization())
-    ipg.smooth()
+    def sharpen(self):
+        sobel_x = np.array([[-1, 0, 1],
+                            [-2, 0, 2],
+                            [-1, 0, 1]], dtype=np.int8)
+        sobel_y = np.array([[-1, -2, -1],
+                            [0, 0, 0],
+                            [1, 2, 1]], dtype=np.int8)
+        height = self.height
+        width = self.width
+        img = self.trans_gray()
+        filtered_img = self.create_blank_img()
 
+        for i in range(1, height - 1):
+            for j in range(1, width - 1):
+                x = np.multiply(img[i - 1:i + 2, j - 1:j + 2], sobel_x)
+                y = np.multiply(img[i - 1:i + 2, j - 1:j + 2], sobel_y)
+                filtered_img[i][j] = abs(x.sum()) + abs(y.sum())
 
+        self.processed_img = filtered_img
+        return filtered_img
