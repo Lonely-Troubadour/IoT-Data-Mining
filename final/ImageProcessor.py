@@ -137,7 +137,7 @@ class ImageProcessor:
         """
         transform_mat = np.array([[1, 0, x],
                                   [0, 1, y],
-                                  [0, 0, 1]], dtype=np.int8)
+                                  [0, 0, 1]], dtype=np.int32)
         height, width, channels = self.get_shape()
 
         if not cut:
@@ -269,23 +269,30 @@ class ImageProcessor:
         Returns:
             Gray scale image.
         """
-        if self.channels is 1:
-            return self.get_img()
+        if self.img is None:
+            return
 
         n = math.log2(level)
         if n < 1 or n > 8:
             raise ValueError('Quantization level wrong! Must be exponential value of 2')
 
         # Turn image from RGB to Gray scale image
-        img = self.create_blank_img(channels=None)
+        img = self.create_blank_img(channels=1)
         step = 256 / level
 
-        for i in range(self.height):
-            for j in range(self.width):
-                pixel = self.img[i][j]
-                gray = 0.299 * pixel[0] + 0.587 * pixel[1] + 0.114 * pixel[2]
-                mapped_gray = int(gray / step) / (level - 1) * 255
-                img[i][j] = round(mapped_gray)
+        if self.channels is 3:
+            for i in range(self.height):
+                for j in range(self.width):
+                    pixel = self.img[i][j]
+                    gray = 0.299 * pixel[0] + 0.587 * pixel[1] + 0.114 * pixel[2]
+                    mapped_gray = int(gray / step) / (level - 1) * 255
+                    img[i][j] = round(mapped_gray)
+        else:
+            for i in range(self.height):
+                for j in range(self.width):
+                    pixel = self.img[i][j]
+                    mapped_gray = int(pixel / step) / (level - 1) * 255
+                    img[i][j] = round(mapped_gray)
 
         self.processed_img = img
         return img
@@ -309,10 +316,10 @@ class ImageProcessor:
         if not height or not width:
             raise Exception("Invalid height or width!")
 
-        if channels is not None:
-            size = (height, width, channels)
-        else:
-            size = (height, width)
+        if channels is None:
+            channels = 1
+
+        size = (height, width, channels)
         img = np.zeros(size, dtype=np.uint8)
         return img
 
@@ -377,7 +384,7 @@ class ImageProcessor:
         height = self.height
         width = self.width
         img = self.trans_gray()
-        filtered_img = self.create_blank_img()
+        filtered_img = self.create_blank_img(channels=1)
 
         if h is None:
             h = np.array([[1, 2, 1], [2, 4, 2], [1, 2, 1]]) / 16.0
@@ -388,6 +395,7 @@ class ImageProcessor:
                     filtered_img[i][j] = img[i][j]
                 else:
                     x = img[i - 1:i + 2, j - 1:j + 2]
+                    x = x.squeeze()
                     m = np.multiply(x, h)
                     filtered_img[i][j] = m.sum()
 
@@ -404,12 +412,12 @@ class ImageProcessor:
         height = self.height
         width = self.width
         img = self.trans_gray()
-        filtered_img = self.create_blank_img()
+        filtered_img = self.create_blank_img(channels=1)
 
         for i in range(1, height - 1):
             for j in range(1, width - 1):
-                x = np.multiply(img[i - 1:i + 2, j - 1:j + 2], sobel_x)
-                y = np.multiply(img[i - 1:i + 2, j - 1:j + 2], sobel_y)
+                x = np.multiply((img[i - 1:i + 2, j - 1:j + 2]).squeeze(), sobel_x)
+                y = np.multiply((img[i - 1:i + 2, j - 1:j + 2]).squeeze(), sobel_y)
                 filtered_img[i][j] = abs(x.sum()) + abs(y.sum())
 
         self.processed_img = filtered_img
