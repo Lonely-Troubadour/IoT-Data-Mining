@@ -142,14 +142,11 @@ class ImageProcessor:
 
         if not cut:
             img = self.create_blank_img(height + abs(x), width + abs(y))
-
-            # start = time.time()
             for i in range(self.height):
                 for j in range(self.width):
                     # Get new position
                     src = np.array([i, j, 1], dtype=np.int32)
                     dst = np.dot(transform_mat, src)
-
                     if x >= 0 and y >= 0:
                         img[dst[0]][dst[1]] = self.img[i][j]
                     elif y >= 0:
@@ -159,16 +156,12 @@ class ImageProcessor:
                     else:
                         img[i][j] = self.img[i][j]
 
-            # print(time.time() - start)
-
         else:
             img = self.create_blank_img()
-
             for i in range(self.height):
                 for j in range(self.width):
                     src = np.array([i, j, 1], dtype=np.int32)
                     dst = np.dot(transform_mat, src)
-
                     if 0 <= dst[0] < self.height:
                         if 0 <= dst[1] < self.width:
                             img[dst[0]][dst[1]] = self.img[i][j]
@@ -244,6 +237,15 @@ class ImageProcessor:
         return img
 
     def resize(self, m, n):
+        """Resize the image
+
+        Args:
+            m (float): scaler on heght.
+            n (float): scaler on width.
+        
+        Returns:
+            Resized image.
+        """
         height, width, channels = self.get_shape()
         height = int(height * m)
         width = int(width * n)
@@ -381,6 +383,13 @@ class ImageProcessor:
         return img
 
     def smooth(self, h=None):
+        """Smooth
+        Args:
+            h (numpy.array): Smooth operator
+
+        Return:
+            Image after smoothing.
+        """
         height = self.height
         width = self.width
         img = self.trans_gray()
@@ -403,6 +412,11 @@ class ImageProcessor:
         return filtered_img
 
     def sharpen(self):
+        """Sharpen/Edge detection
+        
+        Returns:
+            Processed image
+        """
         sobel_x = np.array([[-1, 0, 1],
                             [-2, 0, 2],
                             [-1, 0, 1]], dtype=np.int8)

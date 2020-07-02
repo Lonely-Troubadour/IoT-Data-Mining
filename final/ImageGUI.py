@@ -1,13 +1,15 @@
 import sys
-from ImageProcessor import ImageProcessor
-from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QFileDialog, QMessageBox, QLineEdit, QTextEdit, \
-    QComboBox, QDialog, QDialogButtonBox, QVBoxLayout, QCheckBox
-from PyQt5.QtWidgets import QToolTip, QDesktopWidget, QGridLayout
-from PyQt5.QtWidgets import QMainWindow, QMenu, QAction, QToolBar
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QIntValidator, QRegExpValidator, QDoubleValidator
+
 from PyQt5.QtCore import QRegExp
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtGui import QIntValidator, QRegExpValidator
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QFileDialog, QMessageBox, QLineEdit, QComboBox, QDialog, \
+    QDialogButtonBox, QVBoxLayout, QCheckBox
+from PyQt5.QtWidgets import QDesktopWidget, QGridLayout
+from PyQt5.QtWidgets import QMainWindow, QAction, QToolBar
+
+from ImageProcessor import ImageProcessor
 
 
 class MainWindow(QMainWindow):
@@ -300,7 +302,7 @@ class MainWindow(QMainWindow):
             self.status_clear()
             return
 
-        img = self.img_proc.shift(int(offset[0]), int(offset[1]),cut=cut)
+        img = self.img_proc.shift(int(offset[0]), int(offset[1]), cut=cut)
         self.show_img(img)
         self.status_msg('Done!', 3)
 
@@ -369,7 +371,6 @@ class MainWindow(QMainWindow):
             return
         self.show_img(img)
         self.status_msg('Done!', 3)
-
 
     # Override
     def closeEvent(self, event):
@@ -448,6 +449,7 @@ class PixelColor(QWidget):
         grid.addWidget(self.lbl_channels, 3, 0)
         grid.addWidget(self.channels, 3, 1)
         self.setLayout(grid)
+
 
 class Hist(QWidget):
     def __init__(self, img):
@@ -610,7 +612,6 @@ class Shift(QDialog):
 
         self.height_in = QLineEdit(self)
         self.height_in.setValidator(va)
-
 
         self.width_in = QLineEdit(self)
         self.width_in.setValidator(va)
